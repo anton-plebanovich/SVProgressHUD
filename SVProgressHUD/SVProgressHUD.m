@@ -1336,24 +1336,27 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
 - (CGFloat)visibleKeyboardHeight {
 #if !defined(SV_APP_EXTENSIONS)
     UIWindow *keyboardWindow = nil;
-    for (UIWindow *testWindow in UIApplication.sharedApplication.windows) {
-        if(![testWindow.class isEqual:UIWindow.class]) {
+    for (UIWindow *testWindow in [[UIApplication sharedApplication] windows]) {
+#ifdef __IPHONE_11_2
+        if([[testWindow class] isEqual:NSClassFromString(@"UIRemoteKeyboardWindow")]) {
             keyboardWindow = testWindow;
             break;
         }
+#else
+        if(![[testWindow class] isEqual:[UIWindow class]]){
+            keyboardWindow = testWindow;
+            break;
+        }
+#endif
     }
     
-    for (__strong UIView *possibleKeyboard in keyboardWindow.subviews) {
-        NSString *viewName = NSStringFromClass(possibleKeyboard.class);
-        if([viewName hasPrefix:@"UI"]){
-            if([viewName hasSuffix:@"PeripheralHostView"] || [viewName hasSuffix:@"Keyboard"]){
-                return CGRectGetHeight(possibleKeyboard.bounds);
-            } else if ([viewName hasSuffix:@"InputSetContainerView"]){
-                for (__strong UIView *possibleKeyboardSubview in possibleKeyboard.subviews) {
-                    viewName = NSStringFromClass(possibleKeyboardSubview.class);
-                    if([viewName hasPrefix:@"UI"] && [viewName hasSuffix:@"InputSetHostView"]) {
-                        return CGRectGetHeight(possibleKeyboardSubview.bounds);
-                    }
+    for (__strong UIView *possibleKeyboard in [keyboardWindow subviews]) {
+        if([possibleKeyboard isKindOfClass:NSClassFromString(@"UIPeripheralHostView")] || [possibleKeyboard isKindOfClass:NSClassFromString(@"UIKeyboard")]) {
+            return CGRectGetHeight(possibleKeyboard.bounds);
+        } else if([possibleKeyboard isKindOfClass:NSClassFromString(@"UIInputSetContainerView")]) {
+            for (__strong UIView *possibleKeyboardSubview in [possibleKeyboard subviews]) {
+                if([possibleKeyboardSubview isKindOfClass:NSClassFromString(@"UIInputSetHostView")]) {
+                    return CGRectGetHeight(possibleKeyboardSubview.bounds);
                 }
             }
         }
